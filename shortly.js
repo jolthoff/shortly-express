@@ -1,6 +1,8 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var session = require('express-session');
+var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 
@@ -18,6 +20,9 @@ app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
+app.use(cookieParser('little kittens'));
+app.use(session());
+
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
@@ -75,7 +80,25 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.get('/login', function(req, res) {
+   res.render('login')
+});
 
+app.get('/logout',
+function(req, res) {
+ var username = req.body.username;
+    var password = req.body.password;
+ 
+    if(username == 'demo' && password == 'demo'){
+        req.session.regenerate(function(){
+        req.session.user = username;
+        res.redirect('/restricted');
+        });
+    }
+    else {
+       res.redirect('login');
+    }    
+})
 
 
 /************************************************************/
