@@ -58,12 +58,13 @@ describe('', function() {
         // };
       });
   });
-
+// });
   describe('Link creation:', function(){
 
     var requestWithSession = request.defaults({jar: true});
 
-var xbeforeEach = function(){};
+
+    var beforeEach = function(done){
       // create a user that we can then log-in with
       new User({
           'username': 'Phillip',
@@ -83,7 +84,7 @@ var xbeforeEach = function(){};
           done();
         });
       });
-    });
+    };
 
     it('Only shortens valid urls, returning a 404 - Not found for invalid urls', function(done) {
       var options = {
@@ -333,4 +334,4 @@ var xbeforeEach = function(){};
 
   }); // 'Account Login'
 
-// });
+});

@@ -13,6 +13,22 @@ var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
+var checkUser = function(req, res, next){
+  if (req.path === '/login' || req.path === '/signup') {
+    next();
+  } else if (!req.session.authenticated) {
+    res.render('login')
+  } else {
+    next();
+  }
+}
+
+var createUser = function(username, req, res) {
+  req.headers.cookie['username'] = username;
+  req.headers.cookie['authenticated'] = true;
+  res.render('index');
+}
+
 var app = express();
 
 app.set('views', __dirname + '/views');
@@ -21,16 +37,28 @@ app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 app.use(cookieParser('little kittens'));
-app.use(session());
+app.use(session({
+  // genid: function(req) {
+  //   return genuuid() // use UUIDs for session IDs 
+  // },
+  secret: 'keyboard cat',
+  saveUninitialized: false,
+  resave: false
+}));
 
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(checkUser);
 
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  if (!req.session.authenticated) {
+    res.render('login')
+  } else {
+    res.render('index');
+  }
 });
 
 app.get('/create', 
@@ -84,21 +112,43 @@ app.get('/login', function(req, res) {
    res.render('login')
 });
 
+app.get('/signup', function(req, res) {
+   res.render('signup')
+});
+
+app.post('/signup', function(req, res) {
+  Users.unique(req.body.username, req.body.password, function(created) {
+    if (created) {
+      createUser(req.body.username, req, res);
+    } else {
+      res.render('signup');
+    }
+  });
+
+});
+
+app.post('/login', function(req, res) {
+  Users.authenticate(req.body.username, req.body.password, function(real) {
+    if (real) {
+      req.session.regenerate(function(err) {
+        createUser(req.body.username, req, res);
+      })
+    } else {
+      res.render('login');
+    }
+  })
+})
+
 app.get('/logout',
 function(req, res) {
- var username = req.body.username;
-    var password = req.body.password;
+  var username = req.body.username;
+  var password = req.body.password;
+  req.session.destroy(function(){
+    res.redirect('login');
+  });
  
-    if(username == 'demo' && password == 'demo'){
-        req.session.regenerate(function(){
-        req.session.user = username;
-        res.redirect('/restricted');
-        });
-    }
-    else {
-       res.redirect('login');
-    }    
 })
+
 
 
 /************************************************************/

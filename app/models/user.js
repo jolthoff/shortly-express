@@ -7,13 +7,29 @@ var Promise = require('bluebird');
 var User = db.Model.extend({
   tableName: 'users',
 
-  initialize: function(username, password) {
-    this.on('creating', function(model, attrs, options) {
-      var hash = bcrypt.hash(password, null, null, function(err, res) {
-        model.set('password', hash);
-        model.set('username', username);
-      })
-    });
+  // initialize: function() {
+  //   this.on('creating', function(model, attrs, options) {
+  //     var salt = bcrypt.genSaltSync();
+  //     bcrypt.hash(attrs.password, salt, null, function(err, res) {
+  //       model.set('password', res);
+  //       model.set('username', attrs.username);
+  //       model.set('salt', salt);
+  //       model.save()
+  //         .then(function() {console.log("success"); process.exit(0);})
+  //         .catch(function(e){
+  //           console.log('error is ' + e);
+  //         });
+  //     });
+  //   });
+  // },
+
+  auth: function(password, cb) {
+    var salt = this.get('salt');
+    var model = this;
+    console.log("this is " + this);
+    bcrypt.hash(password, salt, null, function(err, res) {
+      cb(model.get('password') === res)
+    })
   }
 });
 
