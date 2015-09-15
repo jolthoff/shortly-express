@@ -2,11 +2,12 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var session = require('express-session');
-var cookieParser = require('cookie-parser');
+// var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 
 var db = require('./app/config');
+var uid = require('uuid');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
 var Links = require('./app/collections/links');
@@ -16,18 +17,12 @@ var Click = require('./app/models/click');
 var checkUser = function(req, res, next){
   if (req.path === '/login' || req.path === '/signup') {
     next();
-  } else if (!req.session.authenticated) {
+  } else if (!req.session.auth) {
     res.render('login')
   } else {
     next();
   }
-}
-
-var createUser = function(username, req, res) {
-  req.headers.cookie['username'] = username;
-  req.headers.cookie['authenticated'] = true;
-  res.render('index');
-}
+};
 
 var app = express();
 
@@ -36,29 +31,42 @@ app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
-app.use(cookieParser('little kittens'));
 app.use(session({
-  // genid: function(req) {
-  //   return genuuid() // use UUIDs for session IDs 
-  // },
+  genid: function(req) {
+    return uid.v4() // use UUIDs for session IDs 
+  },
   secret: 'keyboard cat',
   saveUninitialized: false,
-  resave: false
+  resave: false,
+  cookie: {secure: false,
+          maxAge: 10000000,
+          auth: false
+        }
 }));
+
+var createUser = function(username, req, res) {
+  req.session['username'] = username;
+  req.session['auth'] = true;
+  res.render('index');
+}
 
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 app.use(checkUser);
+app.use(function(req, _, next) {
+  console.log("request session is " + req.session.auth);
+  console.log("request session is " + req.session);
 
+  next();
+});
 
-app.get('/', 
-function(req, res) {
-  if (!req.session.authenticated) {
-    res.render('login')
-  } else {
+app.get('/', function(req, res) {
+  // if (!req.session.cookie.authenticated) {
+  //   res.render('login')
+  // } else {
     res.render('index');
-  }
+  // }
 });
 
 app.get('/create', 

@@ -25,8 +25,10 @@ Users.unique = function(username, password, cb) {
     var salt = bcrypt.genSaltSync();
     var collection = this;
     bcrypt.hash(password, salt, null, function(err, res) {
-      collection.create({'username': username, 'password': res, 'salt': salt});
-      cb(true);
+      collection.create({'username': username, 'password': res, 'salt': salt})
+        .then(function() {
+          cb(true);
+        });
     });
   }
 }
